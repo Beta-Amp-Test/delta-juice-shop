@@ -12,6 +12,11 @@ import * as utils from '../lib/utils'
 const security = require('../lib/insecurity')
 const request = require('request')
 
+const isValidImageUrl = (url: string) => {
+  const validImageTypes = /https?:\/\/(?:[\w-]+\.)+[\w-]+\/(?:[\w-./?%&=]*)\.(?:jpg|jpeg|png|svg|gif)$/i;
+  return validImageTypes.test(url);
+};
+
 module.exports = function profileImageUrlUpload () {
   return (req: Request, res: Response, next: NextFunction) => {
     if (req.body.imageUrl !== undefined) {
@@ -19,6 +24,9 @@ module.exports = function profileImageUrlUpload () {
       if (url.match(/(.)*solve\/challenges\/server-side(.)*/) !== null) req.app.locals.abused_ssrf_bug = true
       const loggedInUser = security.authenticatedUsers.get(req.cookies.token)
       if (loggedInUser) {
+        if (!isValidImageUrl(url)) {
+          return next(new Error('Invalid image URL'));
+        }
         const imageRequest = request
           .get(url)
           .on('error', function (err: unknown) {
